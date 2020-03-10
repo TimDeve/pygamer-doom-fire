@@ -3,7 +3,11 @@
 Adafruit_Arcada arcada;
 extern Adafruit_SPIFlash Arcada_QSPI_Flash;
 
-uint8_t lastButtons = 255;
+GFXcanvas16 *canvas;
+
+int width, height;
+
+bool flip;
 
 void setup()
 {
@@ -25,55 +29,36 @@ void setup()
   arcada.pixels.setPixelColor(3, 0x0000FF);
   arcada.pixels.setPixelColor(4, 0xFFFFFFFF);
   arcada.pixels.show();
+
+  width = arcada.display->width();
+  height = arcada.display->height();
+  if (!arcada.createFrameBuffer(width, height))
+  {
+    arcada.haltBox("Failed to allocate framebuffer");
+  }
+  canvas = arcada.getCanvas();
 }
+
+int16_t x = 10;
 
 void loop()
 {
-  delay(16);
+  x++;
 
-  uint8_t buttons = arcada.readButtons();
-
-  if (lastButtons != buttons)
+  if (x > 100)
   {
-    arcada.display->fillScreen(ARCADA_BLACK);
-
-    arcada.display->setCursor(0, 0);
-
-    arcada.display->println("Hello World!");
-
-    if (buttons & ARCADA_BUTTONMASK_A)
-    {
-      arcada.display->println("Button A");
-    }
-    if (buttons & ARCADA_BUTTONMASK_B)
-    {
-      arcada.display->println("Button B");
-    }
-    if (buttons & ARCADA_BUTTONMASK_SELECT)
-    {
-      arcada.display->println("Select");
-    }
-    if (buttons & ARCADA_BUTTONMASK_START)
-    {
-      arcada.display->println("Start");
-    }
-    if (buttons & ARCADA_BUTTONMASK_UP)
-    {
-      arcada.display->println("Up");
-    }
-    if (buttons & ARCADA_BUTTONMASK_RIGHT)
-    {
-      arcada.display->println("Right");
-    }
-    if (buttons & ARCADA_BUTTONMASK_DOWN)
-    {
-      arcada.display->println("Down");
-    }
-    if (buttons & ARCADA_BUTTONMASK_LEFT)
-    {
-      arcada.display->println("Left");
-    }
+    x = 10;
   }
 
-  lastButtons = buttons;
+  canvas->fillScreen(ARCADA_BLACK);
+
+  canvas->drawPixel(60, x - 3, 0xFFFF);
+  canvas->drawPixel(61, x - 2, 0xFFFF);
+  canvas->drawPixel(62, x - 1, 0xFFFF);
+  canvas->drawPixel(63, x, 0xFFFF);
+  canvas->drawPixel(64, x + 1, 0xFFFF);
+  canvas->drawPixel(65, x + 2, 0xFFFF);
+  canvas->drawPixel(66, x + 3, 0xFFFF);
+
+  arcada.blitFrameBuffer(0, 0);
 }
