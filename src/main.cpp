@@ -1,5 +1,8 @@
 #include <Adafruit_Arcada.h>
 
+#define FIRE_WIDTH 100
+#define FIRE_HEIGHT 100
+
 Adafruit_Arcada arcada;
 extern Adafruit_SPIFlash Arcada_QSPI_Flash;
 
@@ -7,7 +10,64 @@ GFXcanvas16 *canvas;
 
 int width, height;
 
-bool flip;
+uint16_t colors[] = {
+    0x0841,
+    0x2041,
+    0x3081,
+    0x4881,
+    0x58C1,
+    0x6901,
+    0x7101,
+    0x8941,
+    0x9981,
+    0xAA01,
+    0xBA41,
+    0xC241,
+    0xDA81,
+    0xDAA1,
+    0xDAA1,
+    0xD2E1,
+    0xD2E1,
+    0xD322,
+    0xCB62,
+    0xCBA2,
+    0xCBE2,
+    0xCC23,
+    0xC423,
+    0xC463,
+    0xC4A4,
+    0xBCE4,
+    0xBCE4,
+    0xBD25,
+    0xBD25,
+    0xBD66,
+    0xB566,
+    0xB5A6,
+    0xB5A7,
+    0xCE6D,
+    0xDEF3,
+    0xEF78,
+    0xFFFF};
+
+uint8_t fire[FIRE_WIDTH * FIRE_HEIGHT] = {0};
+
+bool flip = false;
+
+void blink()
+{
+  if (flip)
+  {
+    flip = false;
+    arcada.pixels.setPixelColor(2, 0x000000);
+    arcada.pixels.show();
+  }
+  else
+  {
+    flip = true;
+    arcada.pixels.setPixelColor(2, 0xFFFFFF);
+    arcada.pixels.show();
+  }
+}
 
 void setup()
 {
@@ -37,28 +97,34 @@ void setup()
     arcada.haltBox("Failed to allocate framebuffer");
   }
   canvas = arcada.getCanvas();
-}
 
-int16_t x = 10;
+  for (int i = 0; i < FIRE_WIDTH; i++)
+  {
+    fire[(FIRE_HEIGHT) * (FIRE_WIDTH - 1) + i] = 36;
+  }
+
+  randomSeed(analogRead(0));
+}
 
 void loop()
 {
-  x++;
-
-  if (x > 100)
-  {
-    x = 10;
-  }
-
+  delay(50);
   canvas->fillScreen(ARCADA_BLACK);
 
-  canvas->drawPixel(60, x - 3, 0xFFFF);
-  canvas->drawPixel(61, x - 2, 0xFFFF);
-  canvas->drawPixel(62, x - 1, 0xFFFF);
-  canvas->drawPixel(63, x, 0xFFFF);
-  canvas->drawPixel(64, x + 1, 0xFFFF);
-  canvas->drawPixel(65, x + 2, 0xFFFF);
-  canvas->drawPixel(66, x + 3, 0xFFFF);
+  blink();
+
+  for (int x = 0; x < FIRE_WIDTH; x++)
+  {
+    for (int y = 1; y < FIRE_HEIGHT; y++)
+    {
+      int rand = random(0, 3);
+
+      int color = fire[(y * FIRE_WIDTH + x)] - (rand & 1);
+      fire[(y * FIRE_WIDTH + x) - FIRE_WIDTH] = color < 0 ? 0 : color;
+
+      canvas->drawPixel(x, y, colors[fire[y * FIRE_WIDTH + 1]]);
+    }
+  }
 
   arcada.blitFrameBuffer(0, 0);
 }
