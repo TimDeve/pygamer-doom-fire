@@ -1,7 +1,7 @@
 #include <Adafruit_Arcada.h>
 
-#define FIRE_WIDTH 100
-#define FIRE_HEIGHT 100
+#define SCREEN_WIDTH 160
+#define SCREEN_HEIGHT 128
 
 Adafruit_Arcada arcada;
 extern Adafruit_SPIFlash Arcada_QSPI_Flash;
@@ -49,29 +49,27 @@ uint16_t colors[] = {
     0xEF78,
     0xFFFF};
 
-uint8_t fire[FIRE_WIDTH * FIRE_HEIGHT] = {0};
+uint8_t fire[SCREEN_WIDTH * SCREEN_HEIGHT] = {0};
 
-bool flip = false;
+bool isLightOn = false;
 
 void blink()
 {
-  if (flip)
+  if (isLightOn)
   {
-    flip = false;
+    isLightOn = false;
     arcada.pixels.setPixelColor(2, 0x000000);
-    arcada.pixels.show();
   }
   else
   {
-    flip = true;
-    arcada.pixels.setPixelColor(2, 0xFFFFFF);
-    arcada.pixels.show();
+    isLightOn = true;
+    arcada.pixels.setPixelColor(2, 0x110000);
   }
+  arcada.pixels.show();
 }
 
 void setup()
 {
-  Serial.println("Hello PyGamer");
   if (!arcada.arcadaBegin())
   {
     Serial.print("Failed to start Arcada");
@@ -80,27 +78,18 @@ void setup()
   }
 
   arcada.displayBegin();
-  arcada.display->fillScreen(ARCADA_BLACK);
+  arcada.display->fillScreen(colors[0]);
   arcada.setBacklight(255);
 
-  arcada.pixels.setPixelColor(0, 0xFFFFFFFF);
-  arcada.pixels.setPixelColor(1, 0xFF0000);
-  arcada.pixels.setPixelColor(2, 0x00FF00);
-  arcada.pixels.setPixelColor(3, 0x0000FF);
-  arcada.pixels.setPixelColor(4, 0xFFFFFFFF);
-  arcada.pixels.show();
-
-  width = arcada.display->width();
-  height = arcada.display->height();
-  if (!arcada.createFrameBuffer(width, height))
+  if (!arcada.createFrameBuffer(SCREEN_WIDTH, SCREEN_HEIGHT))
   {
     arcada.haltBox("Failed to allocate framebuffer");
   }
   canvas = arcada.getCanvas();
 
-  for (int i = 0; i < FIRE_WIDTH; i++)
+  for (int i = 0; i < SCREEN_WIDTH; i++)
   {
-    fire[(FIRE_HEIGHT) * (FIRE_WIDTH - 1) + i] = 36;
+    fire[(SCREEN_WIDTH) * (SCREEN_HEIGHT - 1) + i] = 36;
   }
 
   randomSeed(analogRead(0));
@@ -108,21 +97,18 @@ void setup()
 
 void loop()
 {
-  delay(50);
-  canvas->fillScreen(ARCADA_BLACK);
-
   blink();
 
-  for (int x = 0; x < FIRE_WIDTH; x++)
+  for (int x = 0; x < SCREEN_WIDTH; x++)
   {
-    for (int y = 1; y < FIRE_HEIGHT; y++)
+    for (int y = 1; y < SCREEN_HEIGHT; y++)
     {
       int rand = random(0, 3);
 
-      int color = fire[(y * FIRE_WIDTH + x)] - (rand & 1);
-      fire[(y * FIRE_WIDTH + x) - FIRE_WIDTH] = color < 0 ? 0 : color;
+      int color = fire[(y * SCREEN_WIDTH + x)] - (rand & 1);
+      fire[(y * SCREEN_WIDTH + x) - SCREEN_WIDTH] = color < 0 ? 0 : color;
 
-      canvas->drawPixel(x, y, colors[fire[y * FIRE_WIDTH + 1]]);
+      canvas->drawPixel(x, y, colors[fire[y * SCREEN_WIDTH + x]]);
     }
   }
 
