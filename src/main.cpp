@@ -53,6 +53,24 @@ uint8_t fire[SCREEN_WIDTH * SCREEN_HEIGHT] = {0};
 
 bool isLightOn = false;
 
+int wind = 2;
+
+void moreWind()
+{
+  if (wind < 5)
+  {
+    wind++;
+  }
+}
+
+void lessWind()
+{
+  if (wind > 1)
+  {
+    wind--;
+  }
+}
+
 void blink()
 {
   if (isLightOn)
@@ -68,7 +86,72 @@ void blink()
   arcada.pixels.show();
 }
 
-void setup()
+void seedBottomFireRow()
+{
+  for (int i = 0; i < SCREEN_WIDTH; i++)
+  {
+    fire[(SCREEN_WIDTH) * (SCREEN_HEIGHT - 1) + i] = 36;
+  }
+}
+
+void seedBottomFireRowLess()
+{
+  for (int i = 0; i < SCREEN_WIDTH; i++)
+  {
+    if (random(0, 2))
+    {
+      fire[(SCREEN_WIDTH) * (SCREEN_HEIGHT - 1) + i] = 30;
+    }
+    else
+    {
+      fire[(SCREEN_WIDTH) * (SCREEN_HEIGHT - 1) + i] = 20;
+    }
+  }
+}
+
+void checkButtons()
+{
+  uint8_t buttons = arcada.readButtons();
+
+  if (buttons & ARCADA_BUTTONMASK_A)
+  {
+    seedBottomFireRow();
+  }
+  if (buttons & ARCADA_BUTTONMASK_B)
+  {
+    seedBottomFireRowLess();
+  }
+  if (buttons & ARCADA_BUTTONMASK_RIGHT)
+  {
+    lessWind();
+  }
+  if (buttons & ARCADA_BUTTONMASK_LEFT)
+  {
+    moreWind();
+  }
+}
+
+void renderFire()
+{
+  for (int x = 0; x < SCREEN_WIDTH; x++)
+  {
+    for (int y = 1; y < SCREEN_HEIGHT; y++)
+    {
+      int randY = random(0, 2);
+      int randX = random(0, wind);
+
+      int color = fire[(y * SCREEN_WIDTH + x)] - (randY & 1);
+      int index = (y * SCREEN_WIDTH + x) - randX - SCREEN_WIDTH;
+      fire[index < 0 ? 0 : index] = color < 0 ? 0 : color;
+
+      canvas->drawPixel(x, y, colors[fire[y * SCREEN_WIDTH + x]]);
+    }
+  }
+
+  arcada.blitFrameBuffer(0, 0);
+}
+
+void initArcada()
 {
   if (!arcada.arcadaBegin())
   {
@@ -76,21 +159,33 @@ void setup()
     while (true)
       ;
   }
+}
 
+void initDisplay()
+{
   arcada.displayBegin();
   arcada.display->fillScreen(colors[0]);
   arcada.setBacklight(255);
+}
 
+void initCanvas()
+{
   if (!arcada.createFrameBuffer(SCREEN_WIDTH, SCREEN_HEIGHT))
   {
     arcada.haltBox("Failed to allocate framebuffer");
   }
   canvas = arcada.getCanvas();
+}
 
-  for (int i = 0; i < SCREEN_WIDTH; i++)
-  {
-    fire[(SCREEN_WIDTH) * (SCREEN_HEIGHT - 1) + i] = 36;
-  }
+void setup()
+{
+  initArcada();
+
+  initDisplay();
+
+  initCanvas();
+
+  seedBottomFireRow();
 
   randomSeed(analogRead(0));
 }
@@ -99,18 +194,7 @@ void loop()
 {
   blink();
 
-  for (int x = 0; x < SCREEN_WIDTH; x++)
-  {
-    for (int y = 1; y < SCREEN_HEIGHT; y++)
-    {
-      int rand = random(0, 3);
+  checkButtons();
 
-      int color = fire[(y * SCREEN_WIDTH + x)] - (rand & 1);
-      fire[(y * SCREEN_WIDTH + x) - SCREEN_WIDTH] = color < 0 ? 0 : color;
-
-      canvas->drawPixel(x, y, colors[fire[y * SCREEN_WIDTH + x]]);
-    }
-  }
-
-  arcada.blitFrameBuffer(0, 0);
+  renderFire();
 }
